@@ -1,8 +1,12 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHashHistory
+} from "vue-router";
 
 import Home from "./Home";
-import About from "./About";
-import Movie from "./Movie";
+import MonthSlotDay from "../components/MonthSlotDay";
+import WeekSlotDayBody from "../components/WeekSlotDayBody";
+import DaySlotHeadIntervals from "../components/DaySlotHeadIntervals";
 import NotFound from "./NotFound";
 
 export default createRouter({
@@ -11,18 +15,21 @@ export default createRouter({
   history: createWebHashHistory(),
   // pages
   // https://google.com/
-  routes: [
-    {
+  routes: [{
       path: "/",
       component: Home,
     },
     {
-      path: "/movie/:id?",
-      component: Movie,
+      path: "/month",
+      component: MonthSlotDay,
     },
     {
-      path: "/about",
-      component: About,
+      path: "/week",
+      component: WeekSlotDayBody,
+    },
+    {
+      path: "/day",
+      component: DaySlotHeadIntervals,
     },
     {
       path: "/:notFound(.*)",

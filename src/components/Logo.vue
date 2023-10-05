@@ -1,5 +1,10 @@
 <template>
-  <RouterLink to="/" class="logo"> <span>MyPrj</span>.COM </RouterLink>
+  <RouterLink
+    to="/"
+    class="logo"
+  >
+    <span>Q</span>Calendar
+  </RouterLink>
 </template>
 
 <style lang="scss" scoped>

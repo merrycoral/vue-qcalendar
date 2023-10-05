@@ -7,43 +7,46 @@
     />
 
     <div class="row justify-center">
-      <div style="display: flex; max-width: 800px; width: 100%;">
-        <q-calendar-month
+      <div style="display: flex; max-width: 800px; width: 100%; height: 400px;">
+        <q-calendar-day
           ref="calendar"
           v-model="selectedDate"
+          view="week"
           animated
           bordered
-          focusable
-          hoverable
-          no-active-date
-          :day-min-height="60"
-          :day-height="0"
           @change="onChange"
           @moved="onMoved"
           @click-date="onClickDate"
-          @click-day="onClickDay"
-          @click-workweek="onClickWorkweek"
-          @click-head-workweek="onClickHeadWorkweek"
+          @click-time="onClickTime"
+          @click-interval="onClickInterval"
+          @click-head-intervals="onClickHeadIntervals"
           @click-head-day="onClickHeadDay"
         >
-          <template #day="{ scope: { timestamp } }">
+          <template #head-intervals="{ scope }">
+            <div style="display: flex; justify-content: center; flex-direction: column; width: 100%; font-size: 10px; font-weight: 700;">
+              <span>Showing: {{ scope.days.length }} day</span>
+            </div>
+          </template>
+
+          <template #day-body="{ scope: { timestamp, timeStartPos, timeDurationHeight } }">
             <template
-              v-for="event in eventsMap[timestamp.date]"
+              v-for="event in getEvents(timestamp.date)"
               :key="event.id"
             >
               <div
-                :class="badgeClasses(event, 'day')"
-                :style="badgeStyles(event, 'day')"
+                v-if="event.time !== undefined"
                 class="my-event"
+                :class="badgeClasses(event, 'body')"
+                :style="badgeStyles(event, 'body', timeStartPos, timeDurationHeight)"
               >
-                <div class="title q-calendar__ellipsis">
-                  {{ event.title + (event.time ? ' - ' + event.time : '') }}
-                  <q-tooltip>{{ event.details }}</q-tooltip>
-                </div>
+                <span class="title q-calendar__ellipsis">
+                  {{ event.title }}
+                  <!-- <q-tooltip>{{ event.details }}</q-tooltip> -->
+                </span>
               </div>
             </template>
           </template>
-        </q-calendar-month>
+        </q-calendar-day>
       </div>
     </div>
   </div>
@@ -51,45 +54,44 @@
 
 <script>
 import {
-  QCalendarMonth,
+  QCalendarDay,
   addToDate,
-  parseDate,
   parseTimestamp,
-  today
-} from '@quasar/quasar-ui-qcalendar/src/index.js'
+  isBetweenDates,
+  today,
+  parsed,
+  parseDate,
+  parseTime
+} from '@quasar/quasar-ui-qcalendar/src/QCalendarDay.js'
 import '@quasar/quasar-ui-qcalendar/src/QCalendarVariables.sass'
 import '@quasar/quasar-ui-qcalendar/src/QCalendarTransitions.sass'
-import '@quasar/quasar-ui-qcalendar/src/QCalendarMonth.sass'
+import '@quasar/quasar-ui-qcalendar/src/QCalendarDay.sass'
 
 import { defineComponent } from 'vue'
 import NavigationBar from '../components/NavigationBar.vue'
-
-const timestamp = require('@quasar/quasar-ui-qcalendar/src/utils/Timestamp.js')
-console.log(timestamp.today())
-//debugger
 
 // The function below is used to set up our demo data
 const CURRENT_DAY = new Date()
 function getCurrentDay (day) {
   const newDay = new Date(CURRENT_DAY)
-  newDay.setDate(day)
+  day;
+  //newDay.setDate(day)
   const tm = parseDate(newDay)
-  console.log(tm.date)
   return tm.date
 }
 
 export default defineComponent({
-  name: 'MonthSlotDay',
+  name: 'DaySlotHeadIntervals',
   components: {
     NavigationBar,
-    QCalendarMonth
+    QCalendarDay
   },
   data () {
     return {
       selectedDate: today(),
       events: [
         {
-          id: 'ewrwesdfserw',
+          id: 1,
           title: '1st of the Month',
           details: 'Everything is funny as long as it is happening to someone else',
           date: getCurrentDay(1),
@@ -139,7 +141,7 @@ export default defineComponent({
           details: 'Teaching Javascript 101',
           date: getCurrentDay(22),
           time: '08:00',
-          duration: 540,
+          duration: 30,
           bgcolor: 'blue',
           icon: 'fas fa-chalkboard-teacher'
         },
@@ -155,15 +157,6 @@ export default defineComponent({
         },
         {
           id: 8,
-          title: 'Rowing',
-          details: 'Stay in shape!',
-          date: getCurrentDay(27),
-          bgcolor: 'purple',
-          icon: 'rowing',
-          days: 2
-        },
-        {
-          id: 9,
           title: 'Fishing',
           details: 'Time for some weekend R&R',
           date: getCurrentDay(27),
@@ -172,7 +165,7 @@ export default defineComponent({
           days: 2
         },
         {
-          id: 10,
+          id: 9,
           title: 'Vacation',
           details: 'Trails and hikes, going camping! Don\'t forget to bring bear spray!',
           date: getCurrentDay(29),
@@ -183,47 +176,85 @@ export default defineComponent({
       ]
     }
   },
+
   computed: {
+    // convert the events into a map of lists keyed by date
     eventsMap () {
       const map = {}
-      if (this.events.length > 0) {
-        this.events.forEach(event => {
-          (map[ event.date ] = (map[ event.date ] || [])).push(event)
-          if (event.days !== undefined) {
-            let timestamp = parseTimestamp(event.date)
-            let days = event.days
-            // add a new event for each day
-            // skip 1st one which would have been done above
-            do {
-              timestamp = addToDate(timestamp, { day: 1 })
-              if (!map[ timestamp.date ]) {
-                map[ timestamp.date ] = []
-              }
-              map[ timestamp.date ].push(event)
-              // already accounted for 1st day
-            } while (--days > 1)
-          }
-        })
-      }
-      console.log(map)
+      // this.events.forEach(event => (map[ event.date ] = map[ event.date ] || []).push(event))
+      this.events.forEach(event => {
+        if (!map[ event.date ]) {
+          map[ event.date ] = []
+        }
+        map[ event.date ].push(event)
+        if (event.days) {
+          let timestamp = parseTimestamp(event.date)
+          let days = event.days
+          do {
+            timestamp = addToDate(timestamp, { day: 1 })
+            if (!map[ timestamp.date ]) {
+              map[ timestamp.date ] = []
+            }
+            map[ timestamp.date ].push(event)
+          } while (--days > 0)
+        }
+      })
       return map
     }
   },
+
   methods: {
     badgeClasses (event, type) {
+      const isHeader = type === 'header'
       return {
         [ `text-white bg-${ event.bgcolor }` ]: true,
+        'full-width': !isHeader && (!event.side || event.side === 'full'),
+        'left-side': !isHeader && event.side === 'left',
+        'right-side': !isHeader && event.side === 'right',
         'rounded-border': true
       }
     },
 
-    badgeStyles (day, event) {
+    badgeStyles (event, type, timeStartPos = undefined, timeDurationHeight = undefined) {
       const s = {}
-      // s.left = day.weekday === 0 ? 0 : (day.weekday * this.parsedCellWidth) + '%'
-      // s.top = 0
-      // s.bottom = 0
-      // s.width = (event.days * this.parsedCellWidth) + '%'
+      if (timeStartPos && timeDurationHeight) {
+        s.top = timeStartPos(event.time) + 'px'
+        s.height = timeDurationHeight(event.duration) + 'px'
+      }
+      s[ 'align-items' ] = 'flex-start'
       return s
+    },
+
+    getEvents (dt) {
+      // get all events for the specified date
+      const events = this.eventsMap[ dt ] || []
+
+      if (events.length === 1) {
+        events[ 0 ].side = 'full'
+      }
+      else if (events.length === 2) {
+        // this example does no more than 2 events per day
+        // check if the two events overlap and if so, select
+        // left or right side alignment to prevent overlap
+        const startTime = addToDate(parsed(events[ 0 ].date), { minute: parseTime(events[ 0 ].time) })
+        const endTime = addToDate(startTime, { minute: events[ 0 ].duration })
+        const startTime2 = addToDate(parsed(events[ 1 ].date), { minute: parseTime(events[ 1 ].time) })
+        const endTime2 = addToDate(startTime2, { minute: events[ 1 ].duration })
+        if (isBetweenDates(startTime2, startTime, endTime, true) || isBetweenDates(endTime2, startTime, endTime, true)) {
+          events[ 0 ].side = 'left'
+          events[ 1 ].side = 'right'
+        }
+        else {
+          events[ 0 ].side = 'full'
+          events[ 1 ].side = 'full'
+        }
+      }
+
+      return events
+    },
+
+    scrollToEvent (event) {
+      this.$refs.calendar.scrollToTime(event.time, 350)
     },
 
     onToday () {
@@ -235,6 +266,7 @@ export default defineComponent({
     onNext () {
       this.$refs.calendar.next()
     },
+
     onMoved (data) {
       console.log('onMoved', data)
     },
@@ -244,17 +276,17 @@ export default defineComponent({
     onClickDate (data) {
       console.log('onClickDate', data)
     },
-    onClickDay (data) {
-      console.log('onClickDay', data)
+    onClickTime (data) {
+      console.log('onClickTime', data)
     },
-    onClickWorkweek (data) {
-      console.log('onClickWorkweek', data)
+    onClickInterval (data) {
+      console.log('onClickInterval', data)
+    },
+    onClickHeadIntervals (data) {
+      console.log('onClickHeadIntervals', data)
     },
     onClickHeadDay (data) {
       console.log('onClickHeadDay', data)
-    },
-    onClickHeadWorkweek (data) {
-      console.log('onClickHeadWorkweek', data)
     }
   }
 })
@@ -262,11 +294,10 @@ export default defineComponent({
 
 <style lang="sass" scoped>
 .my-event
-  position: relative
+  position: absolute
   font-size: 12px
-  width: 100%
-  margin: 1px 0 0 0
   justify-content: center
+  margin: 0 1px
   text-overflow: ellipsis
   overflow: hidden
   cursor: pointer
@@ -301,6 +332,18 @@ export default defineComponent({
 
 .bg-purple
   background: purple
+
+.full-width
+  left: 0
+  width: calc(100% - 2px)
+
+.left-side
+  left: 0
+  width: calc(50% - 3px)
+
+.right-side
+  left: 50%
+  width: calc(50% - 3px)
 
 .rounded-border
   border-radius: 2px

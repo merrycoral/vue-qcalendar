@@ -1,7 +1,7 @@
 import axios from "axios";
 import _uniqBy from "lodash/uniqBy";
 
-const _defaultMessage = "Search for the movie title!";
+const _defaultMessage = ".";
 
 export default {
   // 현재 파일(movie.js)을 Store 모듈로 활용하려면 다음 옵션이 필요합니다.
@@ -38,7 +38,10 @@ export default {
   // 변이(Mutations)가 아닌 나머지 모든 로직을 관리합니다.
   // 비동기로 동작합니다.
   actions: {
-    async searchMovies({ state, commit }, payload) {
+    async searchMovies({
+      state,
+      commit
+    }, payload) {
       // const { title, type, number, year } = payload
       if (state.loading) return;
 
@@ -52,7 +55,10 @@ export default {
           ...payload,
           page: 1,
         });
-        const { Search, totalResults } = res.data;
+        const {
+          Search,
+          totalResults
+        } = res.data;
         commit("updateState", {
           movies: _uniqBy(Search, "imdbID"),
         });
@@ -69,13 +75,17 @@ export default {
               ...payload,
               page,
             });
-            const { Search } = res.data;
+            const {
+              Search
+            } = res.data;
             commit("updateState", {
               movies: [...state.movies, ..._uniqBy(Search, "imdbID")],
             });
           }
         }
-      } catch ({ message }) {
+      } catch ({
+        message
+      }) {
         commit("updateState", {
           movies: [],
           message,
@@ -86,7 +96,10 @@ export default {
         });
       }
     },
-    async searchMovieWithId({ state, commit }, payload) {
+    async searchMovieWithId({
+      state,
+      commit
+    }, payload) {
       // const { id } = payload
       if (state.loading) return;
 
@@ -115,12 +128,18 @@ export default {
 
 // eslint-disable-next-line
 function _fetchMovie(payload) {
-  const { title, type, year, page, id } = payload;
+  const {
+    title,
+    type,
+    year,
+    page,
+    id
+  } = payload;
   const OMDB_API_KEY = "3a131227";
 
-  const url = id
-    ? `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${id}&plot=full`
-    : `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${title}&type=${type}&y=${year}&page=${page}`;
+  const url = id ?
+    `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${id}&plot=full` :
+    `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${title}&type=${type}&y=${year}&page=${page}`;
 
   return new Promise((resolve, reject) => {
     axios

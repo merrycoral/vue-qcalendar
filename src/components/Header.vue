@@ -41,17 +41,21 @@ export default {
     return {
       navigations: [
         {
-          name: 'Search',
+          name: 'Home',
           href: '/'
         },
         {
-          name: 'Movie',
-          href: '/movie/tt4520988',
-          path: /^\/movie/
+          name: 'Month',
+          href: '/month'
         },
         {
-          name: 'About',
-          href: '/about'
+          name: 'Week',
+          href: '/week',
+          //path: '/week'
+        },
+        {
+          name: 'Day',
+          href: '/day'
         }
       ]
     }
@@ -109,5 +113,20 @@ header {
       width: 100%;
     }
   }
+}
+div.nav{
+  display: flex;
+}
+.nav-item{
+  background-color: deepskyblue;
+  text-align: center;
+  padding: 5px 10px;
+  margin: 0px 5px;
+  border-radius: 5px;
+}
+a.nav-link{
+  text-decoration: none;
+  color: #fff;
+  font-weight: 500;
 }
 </style>
